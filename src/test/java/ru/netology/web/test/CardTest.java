@@ -5,54 +5,68 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import ru.netology.web.page.LoginPage;
 
-import java.sql.SQLException;
-
-import static ru.netology.web.data.DataGenerator.cleanData;
+import static com.codeborne.selenide.Selenide.open;
+import static ru.netology.web.data.DataGenerator.*;
 
 public class CardTest {
 
     @AfterAll
-    public static void cleanTables() throws SQLException {
+    public static void cleanTables() {
         cleanData();
     }
 
     @Test
-    void shouldValidUserAuth() throws SQLException {
-        val loginPage = new LoginPage();
-        val verificationPage = loginPage.validUser();
-        verificationPage.validVerify();
+    void shouldValidUserAuth() {
+        val loginPage = open("http://localhost:9999", LoginPage.class);
+        val validUser = generateValidUser();
+        val verificationPage = loginPage.loginUser(validUser);
+        verificationPage.isVisible();
+
+        val validCode = generateValidVerificationCode();
+        verificationPage.validVerify(validCode);
     }
 
     @Test
     void shouldInvalidLoginUser() {
-        val loginPage = new LoginPage();
-        loginPage.invalidLoginUser();
+        val loginPage = open("http://localhost:9999", LoginPage.class);
+        val invalidUser = generateInvalidUser();
+        loginPage.loginUser(invalidUser);
+        loginPage.invalidLogin();
     }
 
     @Test
     void shouldInvalidPasswordUser() {
-        val loginPage = new LoginPage();
-        loginPage.invalidPasswordUser();
+        val loginPage = open("http://localhost:9999", LoginPage.class);
+        val invalidUser = generateValidUserWithInvalidPassword();
+        loginPage.loginUser(invalidUser);
+        loginPage.invalidLogin();
     }
 
     @Test
     void shouldInvalidVerify() {
-        val loginPage = new LoginPage();
-        val verificationPage = loginPage.validUser();
-        verificationPage.invalidVerify();
+        val loginPage = open("http://localhost:9999", LoginPage.class);
+        val validUser = generateValidUser();
+        val verificationPage = loginPage.loginUser(validUser);
+        verificationPage.isVisible();
+
+        val invalidCode = generateInvalidVerificationCode().toString();
+        verificationPage.invalidVerify(invalidCode);
     }
 
     @Test
-    void shouldBlockedVerify() throws SQLException {
-        cleanData();
+    void shouldBlockedVerify() {
+        val loginPage = open("http://localhost:9999", LoginPage.class);
+        val validUser = generateValidUser();
+        val verificationPage = loginPage.loginUser(validUser);
+        verificationPage.isVisible();
 
-        shouldInvalidVerify();
-        shouldInvalidVerify();
-        shouldInvalidVerify();
+        val invalidCode = generateInvalidVerificationCode().toString();
+        verificationPage.invalidVerify(invalidCode);
+        verificationPage.invalidVerify(invalidCode);
+        verificationPage.invalidVerify(invalidCode);
 
-        val loginPage = new LoginPage();
-        val verificationPage = loginPage.validUser();
-        verificationPage.blockedVerify();
+        verificationPage.blockedVerify(invalidCode);
     }
 
 }
+

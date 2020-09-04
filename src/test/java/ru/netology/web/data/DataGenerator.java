@@ -12,16 +12,22 @@ import java.util.Locale;
 @Data
 public class DataGenerator {
 
-    public static void cleanData() throws SQLException {
+    public static void cleanData() {
         val runner = new QueryRunner();
         val codes = "DELETE FROM auth_codes";
+        val transactions = "DELETE FROM card_transactions";
+        val cards = "DELETE FROM cards";
+        val users = "DELETE FROM users";
 
-        try (
+        try {
                 val connection = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/app", "app", "pass"
-                )
-        ) {
+                        "jdbc:mysql://localhost:3306/app", "app", "pass");
             runner.update(connection, codes);
+            runner.update(connection, transactions);
+            runner.update(connection, cards);
+            runner.update(connection, users);
+        } catch (SQLException ex) {
+            System.out.println("SQLException message:" + ex.getMessage());
         }
     }
 
@@ -39,25 +45,37 @@ public class DataGenerator {
                 faker.internet().password());
         return invalidUser;
     }
+    public static AuthInfo generateValidUserWithInvalidPassword() {
+        Faker faker = new Faker(new Locale("en"));
+        AuthInfo invalidUser = new AuthInfo(
+                "vasya",
+                faker.internet().password());
+        return invalidUser;
+    }
 
-    public static String generateValidVerificationCode() throws SQLException {
+    public static String generateValidVerificationCode() {
         val selectCode = "SELECT code FROM auth_codes WHERE created is not null;";
-        val connection = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/app", "app", "pass"
-        );
-        val countStmt = connection.createStatement();
+        try {
+            val connection = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/app", "app", "pass");
+            val countStmt = connection.createStatement();
+            val result = countStmt.executeQuery(selectCode);
 
-        val result = countStmt.executeQuery(selectCode);
-
-        if (result.next()) {
-            val code = result.getString("code");
-            return code;
+            if (result.next()) {
+                val code = result.getString("code");
+                return code;
+            }
+        } catch (SQLException ex) {
+            System.out.println("SQLException message:" + ex.getMessage());
         }
         return null;
     }
 
     public static VerificationInfo generateInvalidVerificationCode() {
-        return new VerificationInfo("123");
+        Faker faker = new Faker(new Locale("en"));
+        VerificationInfo invalidVerificationCode = new VerificationInfo(
+                faker.code().asin());
+        return invalidVerificationCode;
     }
 
 
